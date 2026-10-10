@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>闲鱼一键发帖</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;background:#f5f5f5;color:#222;font-size:15px}
+header{background:#ffcf00;padding:14px 16px;padding-top:calc(14px + env(safe-area-inset-top));font-weight:700;font-size:18px;display:flex;align-items:center;gap:8px}
+header.sub{font-size:12px;font-weight:400;color:#555}
+.tabs{display:flex;background:#fff;border-bottom:1px solid #eee;position:sticky;top:0;z-index:10}
+.tabs button{flex:1;border:0;background:#fff;padding:12px;font-size:15px;color:#666}
+.tabs button.on{color:#111;font-weight:700;border-bottom:3px solid #ffcf00}
+.page{display:none;padding:12px 14px 100px}
+.page.on{display:block}
+.card{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px}
+.card h3{margin:0 0 10px;font-size:15px}
+label{display:block;font-size:13px;color:#666;margin:10px 0 4px}
+input[type=text],input[type=number],textarea,select{width:100%;border:1px solid #ddd;border-radius:8px;padding:10px;font-size:15px;background:#fff}
+textarea{min-height:110px;resize:vertical}
+.row2{display:flex;gap:10px}.row2>*{flex:1}
+.btn{display:block;width:100%;border:0;border-radius:10px;padding:13px;font-size:16px;font-weight:700;margin-top:12px}
+.btn-pub{background:#ffcf00;color:#111}
+.btn-ai{background:#111;color:#ffcf00}
+.btn-sec{background:#eee;color:#333}
+.btn:disabled{opacity:.5}
+.imgs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.imgs img{width:72px;height:72px;object-fit:cover;border-radius:8px}
+.imgadd{width:72px;height:72px;border:1.5px dashed #bbb;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:28px;color:#999;background:#fafafa}
+.hint{font-size:12px;color:#999;margin-top:6px;line-height:1.6}
+.status{position:fixed;left:14px;right:14px;bottom:calc(18px + env(safe-area-inset-bottom));background:#222;color:#fff;border-radius:10px;padding:12px 14px;font-size:14px;display:none;z-index:99}
+.tpls{display:flex;gap:8px;margin:8px 0}
+.tpls button{flex:1;border:1px solid #ddd;background:#fff;border-radius:8px;padding:9px 4px;font-size:13px}
+.tpls button.on{border-color:#ffcf00;background:#fffbe6;font-weight:700}
+.gen-out{background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;padding:10px;margin-top:8px;font-size:14px;white-space:pre-wrap;line-height:1.7}
+</style>
+</head>
+<body>
+<header>🐟 闲鱼一键发帖 <span class="sub">v1.0 · 先去"闲鱼"页登录</span></header>
+<div class="tabs">
+<button id="tabForm" class="on" onclick="showPage('form')">📝 发帖</button>
+<button id="tabAI" onclick="showPage('ai')">✨ AI文案</button>
+</div>
+
+<!-- 发帖表单 -->
+<div id="page-form" class="page on">
+<div class="card">
+<h3>商品信息</h3>
+<label>商品标题</label>
+<input type="text" id="f_title" maxlength="30" placeholder="标题最多30字">
+<div class="row2">
+<div><label>价格（元）</label><input type="number" id="f_price" placeholder="0.00" min="0"></div>
+<div><label>新旧程度</label>
+<select id="f_cond">
+<option value="0">全新</option><option value="1">99新</option>
+<option value="2" selected>95新</option><option value="3">9成新</option>
+<option value="4">8成新</option><option value="5">7成新</option>
+<option value="6">6成新及以下</option>
+</select>
+</div>
+</div>
+<label>商品描述</label>
+<textarea id="f_desc" placeholder="描述一下宝贝…"></textarea>
+<label>商品图片（最多9张）</label>
+<div class="imgs" id="imgList"><div class="imgadd" onclick="pickImages()">＋</div></div>
+<div class="hint">点＋从相册多选图片。发布时自动上传到闲鱼。</div>
+</div>
+<button class="btn btn-ai" onclick="showPage('ai')">✨ AI 生成文案</button>
+<button class="btn btn-pub" id="btnPub" onclick="doPublish()">🚀 一键发布到闲鱼</button>
+<div class="hint">发布流程：App 自动打开闲鱼发布页 → 填入标题/价格/描述 → 上传图片 → 点发布。<br>首次使用请先到"闲鱼"Tab 登录（扫码/短信），登录态会自动保存。</div>
+</div>
+
+<!-- AI 文案 -->
+<div id="page-ai" class="page">
+<div class="card">
+<h3>✨ 接单文案生成（本地模板·离线可用）</h3>
+<label>服务类型</label>
+<input type="text" id="a_service" value="墙面翻新刷漆" placeholder="如：墙面翻新刷漆">
+<div class="row2">
+<div><label>价格</label><input type="text" id="a_price" value="25元/平米起" placeholder="如：25元/平米起"></div>
+<div><label>服务区域</label><input type="text" id="a_area" placeholder="如：朝阳区"></div>
+</div>
+<label>联系方式</label>
+<input type="text" id="a_contact" placeholder="如：微信同号 138xxxx8888">
+<label>文案风格</label>
+<div class="tpls">
+<button data-t="0" class="on" onclick="pickTpl(0)">老师傅版</button>
+<button data-t="1" onclick="pickTpl(1)">优惠版</button>
+<button data-t="2" onclick="pickTpl(2)">口碑版</button>
+</div>
+<button class="btn btn-ai" onclick="genCopy()">✨ 生成文案</button>
+<div id="genOut" style="display:none">
+<label>生成标题（可改）</label>
+<input type="text" id="g_title" maxlength="30">
+<label>生成描述（可改）</label>
+<textarea id="g_desc" style="min-height:200px"></textarea>
+<button class="btn btn-sec" onclick="regen()">🔄 换一版</button>
+<button class="btn btn-pub" onclick="useCopy()">✅ 使用此文案去发帖</button>
+</div>
+</div>
+</div>
+
+<div class="status" id="status"></div>
+
+<script>
+// ---------- 基础 ----------
+let IMAGES = []; // {id, dataUrl}
+let tplIdx = 0, genCount = 0;
+function showPage(p){
+document.getElementById('page-form').classList.toggle('on', p==='form');
+document.getElementById('page-ai').classList.toggle('on', p==='ai');
+document.getElementById('tabForm').classList.toggle('on', p==='form');
+document.getElementById('tabAI').classList.toggle('on', p==='ai');
+}
+function toast(msg, ms){
+const s = document.getElementById('status');
+s.textContent = msg; s.style.display = 'block';
+clearTimeout(s._t); s._t = setTimeout(()=>s.style.display='none', ms||3500);
+}
+function pickTpl(i){
+tplIdx = i;
+document.querySelectorAll('.tpls button').forEach(b=>b.classList.toggle('on', +b.dataset.t===i));
+}
+// ---------- 相册（走原生） ----------
+function pickImages(){
+window.webkit.messageHandlers.poster.postMessage({action:'pickImages', max: 9 - IMAGES.length});
+}
+window.__onImagesPicked = function(list){
+(list||[]).forEach(it=>{ if(IMAGES.length<9) IMAGES.push(it);});
+renderImgs();
+};
+function renderImgs(){
+const box = document.getElementById('imgList');
+box.innerHTML = IMAGES.map((it,i)=>`<img src="${it.dataUrl}" onclick="delImg(${i})">`).join('') +
+(IMAGES.length<9? `<div class="imgadd" onclick="pickImages()">＋</div>`: '');
+}
+function delImg(i){ IMAGES.splice(i,1); renderImgs();}
+
+// ---------- AI 文案（本地模板） ----------
+const TPLS = [
+{ name:'老师傅版',
+titles:[
+'专业{service}老师傅，{price}，当天可上门',
+'{area}{service}｜十年经验老师傅，{price}，免费上门看活',
+'专业{service}，{area}上门服务，{price}，做不好不收钱'],
+descs:[
+`十年老师傅，靠谱实在
+
+✅ 服务内容：{service}，墙面翻新、刮腻子、刷乳胶漆、局部修补，大小活都接
+✅ 施工流程：免费上门看活 → 报价 → 保护家具 → 施工 → 验收付款
+✅ 材料说明：可自带漆或包工包料，环保漆可选
+✅ 价格：{price}（具体看墙面情况报价）
+✅ 服务区域：{area}及周边，远点可商量
+
+📞 联系方式：{contact}
+⏰ 早8点到晚8点都可联系，当天可安排上门
+
+老师傅手艺，做了十几年，口碑说话，不满意不收钱！`]},
+{ name:'优惠版',
+titles:[
+'{area}{service}，{price}，免费上门测量',
+'{area}{service}特惠，{price}，预约从速',
+'{service}优惠中，{price}，包工包料更划算'],
+descs:[
+`🎉 {service}，{price}
+
+📌 优惠内容：{service}，{price}，免费上门测量报价
+📌 服务项目：全屋翻新 / 局部修补 / 出租房刷新 / 办公室翻新
+📌 施工保障：家具全覆盖保护，完工清理现场
+📌 服务区域：{area}及周边
+
+📞 预约电话/微信：{contact}
+💬 直接联系，报"闲鱼优惠"享特价
+
+名额有限，先约先得！`]},
+{ name:'口碑版',
+titles:[
+'{area}{service}，十年口碑老店，{price}，售后有保障',
+'{service}老字号，{price}，不满意免费返工',
+'{area}专业{service}，{price}，回头客超多'],
+descs:[
+`{service}，{price}
+
+🏠 我们是谁：{area}本地施工队，干{service}十几年，回头客和转介绍超多
+🔧 服务内容：{service}，铲墙皮、刮腻子、刷漆、贴壁纸，全包
+🛡️ 售后保障：一年内开裂起皮免费返工
+💰 价格透明：{price}，上门看活后一口价，无增项
+📍 服务区域：{area}及周边
+
+📞 联系：{contact}（电话微信同号）
+💬 随时咨询，免费报价
+
+靠口碑吃饭，活干不好不要钱！`]}
+];
+function genCopy(){
+const v = {
+service: document.getElementById('a_service').value.trim() || '墙面翻新刷漆',
+price: document.getElementById('a_price').value.trim() || '面议',
+area: document.getElementById('a_area').value.trim() || '本市',
+contact: document.getElementById('a_contact').value.trim() || '闲鱼私聊联系'
+};
+const t = TPLS[tplIdx];
+const ti = t.titles[genCount % t.titles.length];
+const de = t.descs[genCount % t.descs.length];
+genCount++;
+const fill = s => s.replaceAll('{service}',v.service).replaceAll('{price}',v.price)
+.replaceAll('{area}',v.area).replaceAll('{contact}',v.contact);
+let title = fill(ti);
+if(title.length > 30) title = title.slice(0,30);
+document.getElementById('g_title').value = title;
+document.getElementById('g_desc').value = fill(de);
+document.getElementById('genOut').style.display = 'block';
+toast('文案已生成，可编辑后使用');
+}
+function regen(){ genCopy();}
+function useCopy(){
+document.getElementById('f_title').value = document.getElementById('g_title').value;
+document.getElementById('f_desc').value = document.getElementById('g_desc').value;
+const p = document.getElementById('a_price').value.trim();
+if(p && /^\d+(\.\d+)?$/.test(p)) document.getElementById('f_price').value = p;
+showPage('form');
+toast('已填入发帖表单');
+}
+
+// ---------- 一键发布 ----------
+function doPublish(){
+const title = document.getElementById('f_title').value.trim();
+const price = document.getElementById('f_price').value.trim();
+const desc = document.getElementById('f_desc').value.trim();
+const cond = +document.getElementById('f_cond').value;
+if(!title){ toast('请填写商品标题'); return;}
+if(!price){ toast('请填写价格'); return;}
+if(!desc){ toast('请填写商品描述'); return;}
+if(IMAGES.length === 0 &&!confirm('没选图片，继续发布吗？')) return;
+const btn = document.getElementById('btnPub');
+btn.disabled = true; btn.textContent = '发布中…';
+toast('正在打开闲鱼发布页并填入内容…', 6000);
+window.webkit.messageHandlers.poster.postMessage({
+action:'publish',
+data:{ title, price, desc, cond,
+images: IMAGES.map(it=>({name: it.id+'.jpg', dataUrl: it.dataUrl}))}
+});
+}
+window.__publishResult = function(ok, msg){
+const btn = document.getElementById('btnPub');
+btn.disabled = false; btn.textContent = '🚀 一键发布到闲鱼';
+toast((ok?'✅ ':'❌ ') + msg, 6000);
+if(ok){ alert('发布结果：'+msg+'\n请到"闲鱼"页确认宝贝已上架。');}
+};
+</script>
+</body>
+</html>
