@@ -179,14 +179,14 @@ const CLOSERS = [
 ];
 
 const TITLE_TPLS = [
-'专业{service}老师傅 {price}',
-'{area}{service} 十年经验 {price}',
-'{service}上门服务 {area} {price}',
-'老师傅{service} {price} 免费看活',
-'{area}{service}包工包料 {price}',
-'{service}翻新 {price} 当天可约',
-'专业{service} {area} {price}',
-'{service} {price} 做不好不收钱',
+'专业{service}老师傅 免费上门看活',
+'{area}{service} 十年经验 靠谱实在',
+'{service}上门服务 {area} 当天可约',
+'老师傅{service} 做不好不收钱',
+'{area}{service} 包工包料价格实在',
+'{service}翻新 {area} 口碑老店',
+'专业{service} {area} 免费报价',
+'{service} {area} 先看活后定价',
 ];
 
 function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
@@ -223,7 +223,7 @@ function genCopy(){
     '【服务优势】',
     ...pts.map((p,i)=>`${i+1}、${fill(p)}`),
     '',
-    `【价格】${v.price}（具体看墙面情况报价）`,
+    `【价格】看活报价，价格面议，报价透明无增项`,
     `【区域】${v.area}及周边`,
     `【联系】${v.contact}`,
     '',
