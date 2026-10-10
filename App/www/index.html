@@ -137,81 +137,103 @@ box.innerHTML = IMAGES.map((it,i)=>`<img src="${it.dataUrl}" onclick="delImg(${i
 }
 function delImg(i){ IMAGES.splice(i,1); renderImgs();}
 
-// ---------- AI 文案（本地模板） ----------
-const TPLS = [
-{ name:'老师傅版',
-titles:[
-'专业{service}老师傅，{price}，当天可上门',
-'{area}{service}｜十年经验老师傅，{price}，免费上门看活',
-'专业{service}，{area}上门服务，{price}，做不好不收钱'],
-descs:[
-`十年老师傅，靠谱实在
-
-✅ 服务内容：{service}，墙面翻新、刮腻子、刷乳胶漆、局部修补，大小活都接
-✅ 施工流程：免费上门看活 → 报价 → 保护家具 → 施工 → 验收付款
-✅ 材料说明：可自带漆或包工包料，环保漆可选
-✅ 价格：{price}（具体看墙面情况报价）
-✅ 服务区域：{area}及周边，远点可商量
-
-📞 联系方式：{contact}
-⏰ 早8点到晚8点都可联系，当天可安排上门
-
-老师傅手艺，做了十几年，口碑说话，不满意不收钱！`]},
-{ name:'优惠版',
-titles:[
-'{area}{service}，{price}，免费上门测量',
-'{area}{service}特惠，{price}，预约从速',
-'{service}优惠中，{price}，包工包料更划算'],
-descs:[
-`🎉 {service}，{price}
-
-📌 优惠内容：{service}，{price}，免费上门测量报价
-📌 服务项目：全屋翻新 / 局部修补 / 出租房刷新 / 办公室翻新
-📌 施工保障：家具全覆盖保护，完工清理现场
-📌 服务区域：{area}及周边
-
-📞 预约电话/微信：{contact}
-💬 直接联系，报"闲鱼优惠"享特价
-
-名额有限，先约先得！`]},
-{ name:'口碑版',
-titles:[
-'{area}{service}，十年口碑老店，{price}，售后有保障',
-'{service}老字号，{price}，不满意免费返工',
-'{area}专业{service}，{price}，回头客超多'],
-descs:[
-`{service}，{price}
-
-🏠 我们是谁：{area}本地施工队，干{service}十几年，回头客和转介绍超多
-🔧 服务内容：{service}，铲墙皮、刮腻子、刷漆、贴壁纸，全包
-🛡️ 售后保障：一年内开裂起皮免费返工
-💰 价格透明：{price}，上门看活后一口价，无增项
-📍 服务区域：{area}及周边
-
-📞 联系：{contact}（电话微信同号）
-💬 随时咨询，免费报价
-
-靠口碑吃饭，活干不好不要钱！`]}
+// ---------- AI 文案引擎 v2（组件化随机组合·零表情符号） ----------
+const OPENERS = [
+'专业{service}老师傅，{area}本地施工队',
+'{area}专业{service}，十几年施工经验',
+'老师傅承接{service}，{area}及周边都可上门',
+'{service}找老师傅，{area}本地人，靠谱实在',
+'承接各类{service}工程，{area}免费上门看活',
+'{area}{service}老师傅，口碑老店，价格实在',
 ];
+
+const INTROS = [
+'主做墙面翻新、刮腻子、刷乳胶漆、局部修补，家装工装都接，大小活不挑。',
+'墙面发霉、开裂、脱皮、泛黄，旧房翻新、二手房刷新，统统搞定。',
+'新房装修刷漆、旧墙翻新、出租房快速刷新、办公室店铺翻新都有做。',
+'铲墙皮、批腻子、打磨、上漆一条龙，材料可包工包料也可单出人工。',
+'局部修补也接，磕碰掉皮、钉眼裂缝、水渍霉斑，当天修当天好。',
+'环保漆、儿童漆、无味漆都可安排，老人小孩住的房子更要注意环保。',
+];
+
+const POINTS_POOL = [
+'免费上门看活，现场报价，报价透明无增项',
+'家具地面全覆盖保护，完工清理现场，干净交工',
+'十年以上老师傅带队，手艺过硬，细节到位',
+'做不好不收钱，不满意免费返工',
+'材料可自带可包料，立邦、多乐士等品牌漆可选',
+'当天可安排上门，工期短，家装一般2-3天完工',
+'一年内开裂起皮免费保修，售后有保障',
+'价格实在，中间不加价，报价就是实价',
+'回头客和转介绍多，口碑说话',
+'早8点到晚8点都可联系，响应快',
+];
+
+const CLOSERS = [
+'有需要的直接联系，免费咨询免费报价。',
+'先看活后报价，合适再定，不合适交个朋友。',
+'活干不好不要钱，靠口碑吃饭。',
+'随时联系，当天可安排上门看活。',
+'价格好商量，活好才是硬道理。',
+'欢迎比价，比的是手艺和实在。',
+];
+
+const TITLE_TPLS = [
+'专业{service}老师傅 {price}',
+'{area}{service} 十年经验 {price}',
+'{service}上门服务 {area} {price}',
+'老师傅{service} {price} 免费看活',
+'{area}{service}包工包料 {price}',
+'{service}翻新 {price} 当天可约',
+'专业{service} {area} {price}',
+'{service} {price} 做不好不收钱',
+];
+
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function pickN(arr, n){
+  const c = [...arr];
+  const out = [];
+  while(out.length < n && c.length){
+    out.push(c.splice(Math.floor(Math.random()*c.length),1)[0]);
+  }
+  return out;
+}
+
 function genCopy(){
-const v = {
-service: document.getElementById('a_service').value.trim() || '墙面翻新刷漆',
-price: document.getElementById('a_price').value.trim() || '面议',
-area: document.getElementById('a_area').value.trim() || '本市',
-contact: document.getElementById('a_contact').value.trim() || '闲鱼私聊联系'
-};
-const t = TPLS[tplIdx];
-const ti = t.titles[genCount % t.titles.length];
-const de = t.descs[genCount % t.descs.length];
-genCount++;
-const fill = s => s.replaceAll('{service}',v.service).replaceAll('{price}',v.price)
-.replaceAll('{area}',v.area).replaceAll('{contact}',v.contact);
-let title = fill(ti);
-if(title.length > 30) title = title.slice(0,30);
-document.getElementById('g_title').value = title;
-document.getElementById('g_desc').value = fill(de);
-document.getElementById('genOut').style.display = 'block';
-toast('文案已生成，可编辑后使用');
+  const v = {
+    service: document.getElementById('a_service').value.trim() || '墙面翻新刷漆',
+    price: document.getElementById('a_price').value.trim() || '面议',
+    area: document.getElementById('a_area').value.trim() || '本市',
+    contact: document.getElementById('a_contact').value.trim() || '闲鱼私聊联系'
+  };
+  const fill = s => s.replaceAll('{service}',v.service).replaceAll('{price}',v.price)
+    .replaceAll('{area}',v.area).replaceAll('{contact}',v.contact);
+
+  // 标题：随机模板
+  let title = fill(pick(TITLE_TPLS));
+  if(title.length > 30) title = title.slice(0,30);
+
+  // 描述：组件随机组合
+  const pts = pickN(POINTS_POOL, 3 + Math.floor(Math.random()*2));
+  const desc = [
+    fill(pick(OPENERS)) + '。',
+    '',
+    fill(pick(INTROS)),
+    '',
+    '【服务优势】',
+    ...pts.map((p,i)=>`${i+1}、${fill(p)}`),
+    '',
+    `【价格】${v.price}（具体看墙面情况报价）`,
+    `【区域】${v.area}及周边`,
+    `【联系】${v.contact}`,
+    '',
+    fill(pick(CLOSERS)),
+  ].join('\n');
+
+  document.getElementById('g_title').value = title;
+  document.getElementById('g_desc').value = desc;
+  document.getElementById('genOut').style.display = 'block';
+  toast('文案已生成，每次都不一样，可编辑后使用');
 }
 function regen(){ genCopy();}
 function useCopy(){
