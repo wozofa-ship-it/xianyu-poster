@@ -6,13 +6,16 @@ import PhotosUI
 struct PosterApp: App {
     // 全局共享：同一 processPool + 默认 dataStore，保证两个 webview 共用登录态且持久化
     static let processPool = WKProcessPool()
+    @State private var selectedTab = 0
     var body: some Scene {
         WindowGroup {
-            TabView {
-                FormWebView()
+            TabView(selection: $selectedTab) {
+                FormWebView(onSwitchTab: { selectedTab = $0 })
                     .tabItem { Label("发帖", systemImage: "square.and.pencil") }
+                    .tag(0)
                 GoofishWebView()
                     .tabItem { Label("闲鱼", systemImage: "fish") }
+                    .tag(1)
             }
         }
     }
@@ -20,7 +23,12 @@ struct PosterApp: App {
 
 // MARK: - 发帖表单页（本地 HTML）
 struct FormWebView: UIViewRepresentable {
-    func makeCoordinator() -> Coordinator { Coordinator() }
+    var onSwitchTab: (Int) -> Void = { _ in }
+    func makeCoordinator() -> Coordinator {
+        let c = Coordinator()
+        c.onSwitchTab = onSwitchTab
+        return c
+    }
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.processPool = PosterApp.processPool
@@ -40,6 +48,7 @@ struct FormWebView: UIViewRepresentable {
                        PHPickerViewControllerDelegate {
         weak var webView: WKWebView?
         var pendingImages: Int = 0
+        var onSwitchTab: (Int) -> Void = { _ in }
 
         func userContentController(_ userContentController: WKUserContentController,
                                    didReceive message: WKScriptMessage) {
@@ -51,6 +60,9 @@ struct FormWebView: UIViewRepresentable {
             } else if action == "publish",
                       let data = dict["data"] as? [String: Any] {
                 startPublish(data: data)
+            } else if action == "switchTab",
+                      let idx = dict["index"] as? Int {
+                DispatchQueue.main.async { self.onSwitchTab(idx) }
             }
         }
 
@@ -255,6 +267,18 @@ class PublishJob: NSObject {
               } else log.push('文件框未找到');
             }
           } catch(e){ log.push('图片异常:'+e.message); }
+          // --- 检测是否"网页版暂不支持发布此分类" ---
+          try {
+            const bodyText = document.body.innerText || '';
+            if(bodyText.includes('暂不支持发布') || bodyText.includes('扫码继续发布')){
+              log.push('NEED_QR_HANDOFF');
+              const qrBtn = [...document.querySelectorAll('a,button,span')]
+                .find(el=>el.textContent.includes('展示二维码') && el.offsetParent!==null);
+              if(qrBtn){ qrBtn.click(); log.push('已自动展示二维码'); await sleep(2000); }
+              else log.push('未找到二维码按钮，请手动点击');
+              return 'QR_HANDOFF|' + log.join('\\n');
+            }
+          } catch(e){ log.push('检测异常:'+e.message); }
           // --- 点发布 ---
           try {
             const btn = [...document.querySelectorAll('button')]
@@ -270,7 +294,13 @@ class PublishJob: NSObject {
             if let err = error {
                 self.finish(false, "JS注入失败: \(err.localizedDescription)")
             } else {
-                let detail = (result as? String ?? "").replacingOccurrences(of: "'", with: "’")
+                let raw = (result as? String ?? "")
+                if raw.hasPrefix("QR_HANDOFF|") {
+                    let detail = raw.replacingOccurrences(of: "QR_HANDOFF|", with: "").replacingOccurrences(of: "'", with: "’")
+                    self.finish(true, "QR_HANDOFF:该分类需闲鱼APP扫码接力\\n\(detail)\\n\\n表单已自动填好，二维码已展示。请到「闲鱼」页用闲鱼APP扫码继续发布")
+                    return
+                }
+                let detail = raw.replacingOccurrences(of: "'", with: "’")
                 // 给发布留 8s，再回读一次页面状态
                 DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
                     wv.evaluateJavaScript("document.documentElement.innerHTML.slice(0,3000)") { r2, _ in
