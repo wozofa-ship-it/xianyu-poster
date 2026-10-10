@@ -267,6 +267,14 @@ images: IMAGES.map(it=>({name: it.id+'.jpg', dataUrl: it.dataUrl}))}
 window.__publishResult = function(ok, msg){
 const btn = document.getElementById('btnPub');
 btn.disabled = false; btn.textContent = '🚀 一键发布到闲鱼';
+if(msg.indexOf('QR_HANDOFF:') === 0){
+  const body = msg.replace('QR_HANDOFF:','');
+  try{ window.webkit.messageHandlers.poster.postMessage({action:'switchTab', index:1}); }catch(e){}
+  setTimeout(function(){
+    alert('该分类网页版不支持直接发布\n\n'+body+'\n\n已为你自动填好表单并展示二维码，用闲鱼APP扫码即可在手机上继续发布');
+  }, 500);
+  return;
+}
 toast((ok?'✅ ':'❌ ') + msg, 6000);
 if(ok){ alert('发布结果：'+msg+'\n请到"闲鱼"页确认宝贝已上架。');}
 };
