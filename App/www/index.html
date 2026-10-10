@@ -79,7 +79,7 @@ textarea{min-height:110px;resize:vertical}
 <input type="text" id="a_service" value="墙面翻新刷漆" placeholder="如：墙面翻新刷漆">
 <div class="row2">
 <div><label>价格</label><input type="text" id="a_price" value="25元/平米起" placeholder="如：25元/平米起"></div>
-<div><label>服务区域</label><input type="text" id="a_area" placeholder="如：朝阳区"></div>
+<div><label>服务区域</label><input type="text" id="a_area" value="海口" disabled style="background:#f0f0f0;color:#666"></div>
 </div>
 <label>联系方式</label>
 <input type="text" id="a_contact" placeholder="如：微信同号 138xxxx8888">
@@ -203,7 +203,7 @@ function genCopy(){
   const v = {
     service: document.getElementById('a_service').value.trim() || '墙面翻新刷漆',
     price: document.getElementById('a_price').value.trim() || '面议',
-    area: document.getElementById('a_area').value.trim() || '本市',
+    area: '海口',
     contact: document.getElementById('a_contact').value.trim() || '闲鱼私聊联系'
   };
   const fill = s => s.replaceAll('{service}',v.service).replaceAll('{price}',v.price)
