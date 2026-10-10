@@ -1,0 +1,25 @@
+name: XianYuPoster
+
+options:
+  bundleIdPrefix: com.xiaoling
+  deploymentTarget:
+    iOS: "15.0"
+
+targets:
+  XianYuPoster:
+    type: application
+    platform: iOS
+    sources:
+      - path: App/Sources
+      - path: App/www/index.html
+        buildPhase: resources
+      - path: App/Assets.xcassets
+        buildPhase: resources
+    settings:
+      MARKETING_VERSION: 1.0.0
+      CURRENT_PROJECT_VERSION: 1
+      GENERATE_INFOPLIST_FILE: "YES"
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
+      INFOPLIST_KEY_CFBundleDisplayName: "闲鱼一键发帖"
+      INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "选择商品图片用于发布宝贝"
